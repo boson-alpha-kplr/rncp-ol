@@ -36,6 +36,7 @@ connection = psycopg2.connect(
     password=password,
     connect_timeout=timeout
 )
+print("Connection established to PostgreSQL database")
 
 cursor = connection.cursor()
 
