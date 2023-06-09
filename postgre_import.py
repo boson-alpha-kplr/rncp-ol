@@ -1,6 +1,7 @@
 import csv
 import os
 import psycopg2
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -37,6 +38,8 @@ connection = psycopg2.connect(
     connect_timeout=timeout
 )
 print("Connection established to PostgreSQL database")
+
+connection.autocommit = True
 
 cursor = connection.cursor()
 
@@ -84,6 +87,82 @@ cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_sch
 results = cursor.fetchall()
 for row in results:
   print(row[0])
+
+time_start=time.time()
+
+# Use an iterator to limit RAM usage
+with open('data-100000.csv', 'r') as file:
+    # Prepare a CSV reader to read through the file
+    reader = csv.reader(file)
+    # Ignore first line (headers)
+    headers = next(reader)
+
+    # Set batch max size
+    batch_max_size = 1024
+
+    # Define table schema so rows can be processed within a loop
+    schema={0:'INT', 1:'TEXT', 11:'TEXT', 12:'TEXT', 13:'TEXT', 14:'TEXT', 16:'SMALLINT',
+      18:'SMALLINT', 20:'SMALLINT', 21:'SMALLINT', 23:'TEXT', 26:'SMALLINT', 27:'SMALLINT', 34:'SMALLINT'}
+    
+    # Initialize batch's size counter
+    batch_size = 0
+    batch_starting_row = 0
+
+    # Initialize query string
+    query = "INSERT INTO co2_vehicles VALUES "
+
+    # Read CSV rows, process them and insert them using multirows inserts
+    for i, row in enumerate(reader):
+      # Prepare data to be inserted
+      #print(f"Processing row #{i}...")
+      if len(row) != 38:
+        print("Column count doesn't match output table definition")
+        continue
+
+      if batch_size==0:
+        query += '('
+      else:
+        query += ', ('
+      
+      for idx, (j, t) in enumerate(schema.items()):
+        if idx > 0:
+          query += ', '
+        if len(row[j]) > 0:
+          if t in ('BIGINT', 'FLOAT', 'INT', 'SMALLINT'):
+            query += row[j]
+          elif t in ('CHAR', 'DATE', 'TEXT', 'VARCHAR'):
+            query += f"'{row[j]}'"
+          else:
+            query += 'NULL'
+        else:
+          query += 'NULL'
+      query += ')'
+
+      batch_size += 1
+      
+      # If batch has reached its max size, executes it
+      if batch_size == batch_max_size:
+        print(f"Running multirows insert for the previous {batch_max_size} rows (#{batch_starting_row} to #{i}) : {len(query)/1024:.2f} kB...")
+        cursor.execute(query)
+        # Reset batch
+        query = "INSERT INTO co2_vehicles VALUES "
+        batch_size = 0
+        batch_starting_row = i
+    
+    # Execute batch if it hasn't been executed in the previous loop
+    if batch_size > 0 and batch_size < batch_max_size:
+      print(f"Running multirows insert for the previous {batch_size} rows (#{batch_starting_row} to #{i}) : {len(query)/1024:.2f} kB)...")
+      cursor.execute(query)
+
+print(f"Import has been successfully completed in {time.time()-time_start:.2f}s")
+# 100,000 rows
+# Batch size  | Logging   | Execution time
+# 100         | Logged    | 105.1s
+# 100         | Unlogged  | 105.58s
+# 1024        | Logged    | 20.38s
+# 1024        | Unlogged  | 20.16s
+# 4096        | Logged    | 31.2s
+# 4096        | Unlogged  | 30.73s
 
 cursor.close()
 connection.close()
