@@ -91,14 +91,14 @@ for row in results:
 time_start=time.time()
 
 # Use an iterator to limit RAM usage
-with open('data-100000.csv', 'r') as file:
+with open('data-1761404.csv', 'r') as file:
     # Prepare a CSV reader to read through the file
     reader = csv.reader(file)
     # Ignore first line (headers)
     headers = next(reader)
 
     # Set batch max size
-    batch_max_size = 1024
+    BATCH_MAX_SIZE = 100
 
     # Define table schema so rows can be processed within a loop
     schema={0:'INT', 1:'TEXT', 11:'TEXT', 12:'TEXT', 13:'TEXT', 14:'TEXT', 16:'SMALLINT',
@@ -141,8 +141,8 @@ with open('data-100000.csv', 'r') as file:
       batch_size += 1
       
       # If batch has reached its max size, executes it
-      if batch_size == batch_max_size:
-        print(f"Running multirows insert for the previous {batch_max_size} rows (#{batch_starting_row} to #{i}) : {len(query)/1024:.2f} kB...")
+      if batch_size == BATCH_MAX_SIZE:
+        print(f"Running multirows insert for the previous {BATCH_MAX_SIZE} rows (#{batch_starting_row} to #{i}) : {len(query)/1024:.2f} kB...")
         cursor.execute(query)
         # Reset batch
         query = "INSERT INTO co2_vehicles VALUES "
@@ -150,19 +150,28 @@ with open('data-100000.csv', 'r') as file:
         batch_starting_row = i
     
     # Execute batch if it hasn't been executed in the previous loop
-    if batch_size > 0 and batch_size < batch_max_size:
+    if batch_size > 0 and batch_size < BATCH_MAX_SIZE:
       print(f"Running multirows insert for the previous {batch_size} rows (#{batch_starting_row} to #{i}) : {len(query)/1024:.2f} kB)...")
       cursor.execute(query)
 
 print(f"Import has been successfully completed in {time.time()-time_start:.2f}s")
 # 100,000 rows
 # Batch size  | Logging   | Execution time
-# 100         | Logged    | 105.1s
-# 100         | Unlogged  | 105.58s
-# 1024        | Logged    | 20.38s
-# 1024        | Unlogged  | 20.16s
-# 4096        | Logged    | 31.2s
-# 4096        | Unlogged  | 30.73s
+#         100 | Logged    |        105.10s
+#         100 | Unlogged  |        105.58s
+#        1024 | Logged    |         20.38s
+#        1024 | Unlogged  |         20.16s
+#        4096 | Logged    |         31.20s
+#        4096 | Unlogged  |         30.73s
+
+# 1,761,404 rows
+# Batch size  | Logging   | Execution time
+#         100 | Logged    |       1869.61s
+#         100 | Unlogged  |       1870.94s
+#        1024 | Logged    |        416.67s
+#        1024 | Unlogged  |        355.80s
+#        4096 | Logged    |        448.40s
+#        4096 | Unlogged  |        456.76s
 
 cursor.close()
 connection.close()
