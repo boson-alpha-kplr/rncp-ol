@@ -53,7 +53,7 @@ cursor = connection.cursor()
 
 #CREATE TABLE IF NOT EXISTS co2_cars (ID INT,Country TEXT,VFN TEXT,Mp TEXT,Mh TEXT,Man TEXT,MMS TEXT,Tan TEXT,T TEXT,Va TEXT,Ve TEXT,Mk TEXT,Cn TEXT,Ct TEXT,Cr TEXT,r INT,"m (kg)" INT,Mt INT,"Enedc (g/km)" INT,"Ewltp (g/km)" INT,"W (mm)" INT,"At1 (mm)" INT,"At2 (mm)" INT,Ft TEXT,Fm TEXT,"ec (cm3)" INT,"ep (KW)" INT,"z (Wh/km)" INT,IT TEXT,"Ernedc (g/km)" FLOAT,"Erwltp (g/km)" FLOAT,De FLOAT,Vf FLOAT,Status TEXT,year INT,"Date of registration" TEXT,"Fuel consumption" INT,"Electric range (km)" INT)
 
-#\COPY co2_cars FROM PROGRAM 'curl https://www.loicherblot.fr/rncp_ol/data-100000.csv' (FORMAT(CSV), DELIMITER(','), HEADER);
+#\COPY co2_cars FROM PROGRAM 'curl https://www.loicherblot.fr/rncp_ol/data-1761404.csv' (FORMAT(CSV), DELIMITER(','), HEADER);
 
 #https://towardsdatascience.com/upload-your-pandas-dataframe-to-your-database-10x-faster-eb6dc6609ddf
 
@@ -172,6 +172,7 @@ print(f"Import has been successfully completed in {time.time()-time_start:.2f}s"
 #        1024 | Unlogged  |        355.80s
 #        4096 | Logged    |        448.40s
 #        4096 | Unlogged  |        456.76s
+#        COPY | Logged    |         30.00s
 
 cursor.close()
 connection.close()
